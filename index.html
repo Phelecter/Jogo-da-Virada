@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a7d3c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Loteria">
+  <title>Gerador de Jogos - Mega e Lotofácil</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --verde-escuro: #062e1a;
+      --verde-medio: #0a7d3c;
+      --verde-claro: #14c76a;
+      --dourado: #ffd700;
+      --dourado-escuro: #d4a900;
+      --roxo: #7b2ff7;
+      --rosa: #f107a3;
+      --vermelho: #ff3b5c;
+      --azul: #00b4ff;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      font-family: 'Inter', Arial, sans-serif;
+      color: #fff;
+      background: #050d08;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -50%;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(20,199,106,0.45), transparent 45%),
+        radial-gradient(circle at 80% 30%, rgba(255,215,0,0.35), transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(123,47,247,0.35), transparent 50%),
+        radial-gradient(circle at 10% 90%, rgba(241,7,163,0.30), transparent 45%),
+        linear-gradient(135deg, #04140b, #0a2d18 50%, #061a10);
+      animation: fundoMover 18s ease-in-out infinite alternate;
+    }
+
+    @keyframes fundoMover {
+      0%   { transform: translate(0,0) scale(1); }
+      50%  { transform: translate(2%, -2%) scale(1.05); }
+      100% { transform: translate(-2%, 2%) scale(1.1); }
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 22px 22px;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 25px 16px calc(60px + env(safe-area-inset-bottom));
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 22px;
+      animation: aparecer 0.8s ease both;
+    }
+
+    h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900;
+      font-size: clamp(24px, 6vw, 40px);
+      margin: 0;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #ffd700, #fff7b0, #ffd700, #14c76a);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: brilhar 4s linear infinite;
+    }
+
+    @keyframes brilhar { to { background-position: 200% center; } }
+
+    header p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: #b8f5cd;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.14);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+      animation: aparecer 0.8s ease both;
+    }
+
+    @keyframes aparecer {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      color: #d9ffe6;
+      display: block;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.35);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: 0.25s;
+      text-align: center;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    select {
+      background-image: linear-gradient(45deg, transparent 50%, #ffd700 50%),
+                        linear-gradient(135deg, #ffd700 50%, transparent 50%);
+      background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%;
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+    }
+
+    select:focus, input[type="number"]:focus {
+      border-color: var(--dourado);
+      box-shadow: 0 0 0 4px rgba(255,215,0,0.18);
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .controle {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .controle input {
+      width: 90px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--dourado);
+      background: rgba(0,0,0,0.45);
+      border: 2px solid rgba(255,215,0,0.4);
+    }
+
+    .botao-menos, .botao-mais {
+      width: 48px;
+      height: 48px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #14c76a, #0a7d3c);
+      color: #fff;
+      font-size: 26px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 6px 0 #053d1e, 0 8px 16px rgba(0,0,0,0.4);
+      line-height: 1;
+    }
+
+    .botao-menos:active, .botao-mais:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #053d1e;
+    }
+
+    .aviso {
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: center;
+      color: #a9f5c6;
+      font-weight: 600;
+    }
+
+    .botoes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .botoes button {
+      padding: 15px 10px;
+      border: none;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 800;
+      font-family: 'Montserrat', sans-serif;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: 0.2s;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .botoes button:active { transform: translateY(3px); }
+
+    .gerar {
+      background: linear-gradient(145deg, #ffd700, #d4a900);
+      color: #1a1a1a !important;
+      box-shadow: 0 6px 0 #8a6d00;
+      grid-column: span 2;
+    }
+
+    .limpar { background: linear-gradient(145deg, #ff3b5c, #b30024); box-shadow: 0 6px 0 #6e0016; }
+    .baixar { background: linear-gradient(145deg, #00b4ff, #0069b3); box-shadow: 0 6px 0 #003f6e; }
+    .pdf    { background: linear-gradient(145deg, #7b2ff7, #4a00b3); box-shadow: 0 6px 0 #2b006e; }
+
+    #numeros {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.35);
+      border: 1px dashed rgba(255,215,0,0.4);
+      min-height: 70px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      font-size: 15px;
+      color: #cfeeff;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .bolinha {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 900;
+      font-size: 17px;
+      color: #062e1a;
+      background: radial-gradient(circle at 30% 25%, #fff7b0, #ffd700 55%, #d4a900);
+      box-shadow: 0 4px 0 #8a6d00, 0 6px 14px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.15);
+      animation: pop 0.4s cubic-bezier(.2,1.4,.4,1) both;
+    }
+
+    .bolinha.roxo {
+      color: #fff;
+      background: radial-gradient(circle at 30% 25%, #d9a8ff, #7b2ff7 55%, #4a00b3);
+      box-shadow: 0 4px 0 #2b006e, 0 6px 14px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.2);
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(0.3) rotate(-30deg); }
+      to   { opacity: 1; transform: scale(1) rotate(0); }
+    }
+
+    .linha-jogo {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.15);
+      width: 100%;
+    }
+
+    .linha-jogo:last-child { border-bottom: none; }
+
+    .titulo-jogo {
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: #ffd700;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    #historico {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 18px;
+      max-height: 340px;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    #historico h2 {
+      margin: 0 0 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: 1px;
+      text-align: center;
+      color: #ffd700;
+      text-transform: uppercase;
+    }
+
+    .jogo {
+      padding: 10px 0;
+      border-bottom: 1px dashed rgba(255,255,255,0.12);
+      font-size: 14px;
+    }
+
+    .jogo:last-child { border-bottom: none; }
+
+    footer {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 12px;
+      color: #7fbf99;
+      letter-spacing: 1px;
+    }
+
+    @media (max-width: 400px) {
+      .bolinha { width: 38px; height: 38px; font-size: 15px; }
+      .botoes button { font-size: 12px; padding: 13px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎰 Gerador de Jogos 🎰</h1>
+      <p>Mega da Virada • Lotofácil</p>
+    </header>
+
+    <div class="card">
+      <label for="modalidade">🎯 Escolha a modalidade</label>
+      <select id="modalidade" onchange="trocarModalidade()">
+        <option value="mega">🍀 Mega da Virada (1 a 60)</option>
+        <option value="lotofacil">💜 Lotofácil (1 a 25)</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <label for="quantidade">🎲 Quantos jogos deseja gerar?</label>
+      <input type="number" id="quantidade" min="1" max="50" value="1">
+    </div>
+
+    <div class="card">
+      <label>🔢 Números por jogo</label>
+      <div class="controle">
+        <button class="botao-menos" onclick="alterarNumeros(-1)">–</button>
+        <input type="number" id="numerosPorJogo" min="6" max="15" value="6" readonly>
+        <button class="botao-mais" onclick="alterarNumeros(1)">+</button>
+      </div>
+      <div class="aviso" id="avisoRegras"></div>
+    </div>
+
+    <div class="botoes">
+      <button class="gerar" onclick="gerarNumeros()">✨ Gerar</button>
+      <button class="limpar" onclick="limparHistorico()">🗑️ Limpar</button>
+      <button class="baixar" onclick="baixarHistorico()">📄 TXT</button>
+      <button class="pdf" onclick="baixarPDF()">📕 PDF</button>
+    </div>
+
+    <div id="numeros">Clique em <strong>Gerar</strong> para criar seus jogos!</div>
+
+    <div id="historico">
+      <h2>📜 Histórico</h2>
+      <div id="listaHistorico"></div>
+    </div>
+
+    <footer>Feito para a sorte grande ✨</footer>
+  </div>
+
+  <script>
+    let historico = [];
+    let contador = 0;
+
+    const modalidades = {
+      mega: {
+        nome: "Mega da Virada",
+        totalNumeros: 60,
+        minPorJogo: 6,
+        maxPorJogo: 15,
+        padraoPorJogo: 6,
+        classe: "dourado"
+      },
+      lotofacil: {
+        nome: "Lotofácil",
+        totalNumeros: 25,
+        minPorJogo: 15,
+        maxPorJogo: 20,
+        padraoPorJogo: 15,
+        classe: "roxo"
+      }
+    };
+
+    let modalidadeAtual = "mega";
+
+    window.onload = () => {
+      const salvo = localStorage.getItem("historicoMega");
+      const salvoContador = localStorage.getItem("contadorMega");
+      const salvoModalidade = localStorage.getItem("modalidadeAtual");
+      if (salvoModalidade && modalidades[salvoModalidade]) {
+        modalidadeAtual = salvoModalidade;
+        document.getElementById("modalidade").value = modalidadeAtual;
+      }
+      aplicarRegrasModalidade();
+      if (salvo) {
+        historico = JSON.parse(salvo);
+        contador = parseInt(salvoContador) || 0;
+        atualizarHistorico();
+      }
+    };
+
+    function trocarModalidade() {
+      modalidadeAtual = document.getElementById("modalidade").value;
+      localStorage.setItem("modalidadeAtual", modalidadeAtual);
+      aplicarRegrasModalidade();
+      document.getElementById("numeros").innerHTML = "Clique em <strong>Gerar</strong> para criar seus jogos!";
+    }
+
+    function aplicarRegrasModalidade() {
+      const cfg = modalidades[modalidadeAtual];
+      const campo = document.getElementById("numerosPorJogo");
+      campo.min = cfg.minPorJogo;
+      campo.max = cfg.maxPorJogo;
+      campo.value = cfg.padraoPorJogo;
+      document.getElementById("avisoRegras").textContent =
+        `Regras: ${cfg.minPorJogo} a ${cfg.maxPorJogo} números (1 a ${cfg.totalNumeros})`;
+    }
+
+    function alterarNumeros(valor) {
+      const cfg = modalidades[modalidadeAtual];
+      const campo = document.getElementById("numerosPorJogo");
+      let atual = parseInt(campo.value);
+      atual += valor;
+      if (atual < cfg.minPorJogo) atual = cfg.minPorJogo;
+      if (atual > cfg.maxPorJogo) atual = cfg.maxPorJogo;
+      campo.value = atual;
+    }
+
+    function criarBolinha(num, classe) {
+      const span = document.createElement("span");
+      span.className = "bolinha" + (classe === "roxo" ? " roxo" : "");
+      span.textContent = String(num).padStart(2, "0");
+      return span;
+    }
+
+    function gerarNumeros() {
+      const cfg = modalidades[modalidadeAtual];
+      const qtd = parseInt(document.getElementById("quantidade").value);
+      const porJogo = parseInt(document.getElementById("numerosPorJogo").value);
+
+      if (qtd < 1) return alert("Digite uma quantidade válida!");
+      if (porJogo < cfg.minPorJogo || porJogo > cfg.maxPorJogo) {
+        return alert(`Números por jogo deve ser entre ${cfg.minPorJogo} e ${cfg.maxPorJogo}.`);
+      }
+
+      const container = document.getElementById("numeros");
+      container.innerHTML = "";
+
+      for (let i = 0; i < qtd; i++) {
+        const nums = [];
+        while (nums.length < porJogo) {
+          const n = Math.floor(Math.random() * cfg.totalNumeros) + 1;
+          if (!nums.includes(n)) nums.push(n);
+        }
+        nums.sort((a, b) => a - b);
+
+        contador++;
+        const texto = `${cfg.nome} - Jogo ${contador}: ${nums.join(" - ")}`;
+        historico.unshift(texto);
+
+        const linha = document.createElement("div");
+        linha.className = "linha-jogo";
+
+        const titulo = document.createElement("div");
+        titulo.className = "titulo-jogo";
+        titulo.textContent = `${cfg.nome} • Jogo ${contador}`;
+        linha.appendChild(titulo);
+
+        nums.forEach((n, idx) => {
+          const bolinha = criarBolinha(n, cfg.classe);
+          bolinha.style.animationDelay = (idx * 0.05) + "s";
+          linha.appendChild(bolinha);
+        });
+
+        container.appendChild(linha);
+      }
+
+      atualizarHistorico();
+      salvarLocal();
+    }
+
+    function atualizarHistorico() {
+      const lista = document.getElementById("listaHistorico");
+      lista.innerHTML = "";
+      historico.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "jogo";
+        const match = item.match(/:\s*(.+)$/);
+        div.innerHTML = `<div class="titulo-jogo">${item.split(":")[0]}</div>`;
+        if (match) {
+          const nums = match[1].split(" - ").map(s => parseInt(s, 10));
+          const isRoxo = item.includes("Lotofácil");
+          const wrapper = document.createElement("div");
+          wrapper.className = "linha-jogo";
+          nums.forEach(n => wrapper.appendChild(criarBolinha(n, isRoxo ? "roxo" : "dourado")));
+          div.appendChild(wrapper);
+        }
+        lista.appendChild(div);
+      });
+    }
+
+    function salvarLocal() {
+      localStorage.setItem("historicoMega", JSON.stringify(historico));
+      localStorage.setItem("contadorMega", contador);
+      localStorage.setItem("modalidadeAtual", modalidadeAtual);
+    }
+
+    function limparHistorico() {
+      if (!confirm("Limpar o histórico?")) return;
+      historico = [];
+      contador = 0;
+      localStorage.clear();
+      atualizarHistorico();
+      document.getElementById("numeros").innerHTML = "Clique em <strong>Gerar</strong> para criar seus jogos!";
+      modalidadeAtual = "mega";
+      document.getElementById("modalidade").value = modalidadeAtual;
+      aplicarRegrasModalidade();
+    }
+
+    function baixarHistorico() {
+      if (historico.length === 0) return alert("Histórico vazio!");
+      const text = historico.slice().reverse().join("\n");
+      const blob = new Blob([text], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "jogos_loteria.txt";
+      link.click();
+    }
+
+    async function baixarPDF() {
+      if (historico.length === 0) return alert("Histórico vazio!");
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+      const agora = new Date();
+      const data = agora.toLocaleDateString("pt-BR");
+      const hora = agora.toLocaleTimeString("pt-BR");
+      let y = 10;
+      pdf.setFontSize(18);
+      pdf.setTextColor(10, 125, 60);
+      pdf.text("Relatório - Jogos de Loteria", 10, y);
+      y += 10;
+      pdf.setFontSize(12);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(`Gerado em: ${data} às ${hora}`, 10, y);
+      y += 15;
+      historico.slice().reverse().forEach(item => {
+        if (y > 280) { pdf.addPage(); y = 10; }
+        pdf.setFontSize(13);
+        pdf.setTextColor(30, 30, 30);
+        pdf.text(item, 10, y);
+        y += 8;
+      });
+      pdf.save(`jogos_loteria_${agora.getTime()}.pdf`);
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js");
+    }
+  </script>
+</body>
+</html>
